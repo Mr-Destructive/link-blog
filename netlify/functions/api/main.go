@@ -57,7 +57,19 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 	switch req.HTTPMethod {
 	case http.MethodGet:
 		if req.QueryStringParameters["id"] != "" {
-
+			linkIdStr, ok := req.QueryStringParameters["id"]
+			if !ok {
+				return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Missing link ID"}, nil
+			}
+			linkId, err := strconv.Atoi(linkIdStr)
+			if err != nil {
+				return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid link ID"}, nil
+			}
+			linkObj, err := queries.GetLink(ctx, int64(linkId))
+			if err != nil {
+				return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
+			}
+			return respond(req, linkObj)
 		}
 
 		var links []models.Link
@@ -135,7 +147,28 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 			return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
 		}
 		return respond(req, linkObj)
-	//case http.MethodDelete:
+
+	case http.MethodDelete:
+		linkIdStr, ok := req.QueryStringParameters["id"]
+		if linkIdStr == "" {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Missing link ID"}, nil
+		}
+		if !ok {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Missing link"}, nil
+		}
+		linkId, err := strconv.Atoi(linkIdStr)
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid link ID"}, nil
+		}
+		err = queries.DeleteLink(ctx, int64(linkId))
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
+		}
+		return events.APIGatewayProxyResponse{
+			StatusCode: 200,
+			Headers:    map[string]string{"Content-Type": "text/html"},
+			Body:       "",
+		}, nil
 	default:
 		return events.APIGatewayProxyResponse{StatusCode: 200}, err
 	}
