@@ -1,0 +1,19 @@
+<form hx-post="/.netlify/functions/api" hx-target="#content" hx-swap="innerHTML" hx-indicator="#loading" class="max-w-md mx-auto bg-white p-8 rounded-lg shadow-md">
+    <h2 class="text-2xl font-bold mb-4">Add New Link</h2>
+    <div id="loading" class="htmx-indicator text-center text-gray-500 py-2">Loading...</div>
+
+    <div class="mb-4">
+        <label for="url" class="block text-gray-700 font-bold mb-2">URL:</label>
+        <input type="url" id="url" name="url" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300">
+    </div>
+
+    <div class="mb-6">
+        <label for="commentary" class="block text-gray-700 font-bold mb-2">Commentary:</label>
+        <textarea id="commentary" name="commentary" class="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring focus:ring-blue-300"></textarea>
+    </div>
+
+    <div class="flex justify-between">
+        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring focus:ring-green-300">Create Link</button>
+        <button hx-get="/" hx-target="#content" hx-swap="innerHTML" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:ring focus:ring-gray-300">Cancel</button>
+    </div>
+</form>

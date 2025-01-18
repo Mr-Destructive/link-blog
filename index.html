@@ -11,6 +11,10 @@
 
     <h1 class="text-3xl font-bold mb-6">LinkBlog</h1>
 
+    <button hx-get="/create-link.html" hx-target="#content" hx-swap="innerHTML" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded mb-4">
+        Add New Link
+    </button>
+
     <div id="content">
         <div id="link-list" hx-get="/.netlify/functions/api" hx-trigger="load" hx-target="#link-list" hx-swap="innerHTML">
             <div class="text-center text-gray-500 py-4">Loading links...</div>

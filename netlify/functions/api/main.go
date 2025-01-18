@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"html/template"
 	"log"
+	"net/http"
+	"net/url"
 	"os"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
@@ -47,15 +49,45 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 		log.Printf("error creating tables: %v", err)
 		return events.APIGatewayProxyResponse{StatusCode: 500}, err
 	}
-	linkTemplate = template.Must(template.New("link").Parse(embedsql.LinkHTML))
-	listTemplate = template.Must(template.New("list").Parse(embedsql.ListHTML))
+	switch req.HTTPMethod {
+	case http.MethodGet:
+		if req.QueryStringParameters["id"] != "" {
 
-	var links []models.Link
-	links, err = queries.ListLinks(ctx)
-	if err != nil {
-		return events.APIGatewayProxyResponse{StatusCode: 500}, err
+		}
+		linkTemplate = template.Must(template.New("link").Parse(embedsql.LinkHTML))
+		listTemplate = template.Must(template.New("list").Parse(embedsql.ListHTML))
+
+		var links []models.Link
+		links, err = queries.ListLinks(ctx)
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 500}, err
+		}
+		return respond(req, links)
+	case http.MethodPost:
+
+		var link models.CreateLinkParams
+		formData, err := url.ParseQuery(req.Body)
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid request body"}, nil
+		}
+		Url := formData.Get("url")
+		content := formData.Get("commentary")
+		if content == "" || Url == "" {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid request body"}, nil
+		}
+		link.Url = Url
+		link.Commentary = content
+		createdLinkId, err := queries.CreateLink(ctx, link)
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
+		}
+		createdLink, err := queries.GetLink(ctx, createdLinkId)
+		return respond(req, createdLink)
+	//case http.MethodPut:
+	//case http.MethodDelete:
+	default:
+		return events.APIGatewayProxyResponse{StatusCode: 200}, err
 	}
-	return respond(req, links)
 }
 
 func respond(req events.APIGatewayProxyRequest, data any) (events.APIGatewayProxyResponse, error) {
