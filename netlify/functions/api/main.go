@@ -1,9 +1,12 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
+	"html/template"
 	"log"
 	"os"
 
@@ -16,7 +19,9 @@ import (
 )
 
 var (
-	queries *models.Queries
+	queries      *models.Queries
+	listTemplate *template.Template
+	linkTemplate *template.Template
 )
 
 func main() {
@@ -42,6 +47,53 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 		log.Printf("error creating tables: %v", err)
 		return events.APIGatewayProxyResponse{StatusCode: 500}, err
 	}
-	return events.APIGatewayProxyResponse{StatusCode: 200}, nil
+	linkTemplate = template.Must(template.New("link").Parse(embedsql.LinkHTML))
+	listTemplate = template.Must(template.New("list").Parse(embedsql.ListHTML))
 
+	var links []models.Link
+	links, err = queries.ListLinks(ctx)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500}, err
+	}
+	return respond(req, links)
+}
+
+func respond(req events.APIGatewayProxyRequest, data any) (events.APIGatewayProxyResponse, error) {
+	log.Printf("request headers: %v", req.Headers)
+
+	if req.Headers["hx-request"] == "true" {
+		var tpl bytes.Buffer
+
+		switch v := data.(type) {
+		case []models.Link:
+			err := listTemplate.Execute(&tpl, v)
+			if err != nil {
+				return events.APIGatewayProxyResponse{StatusCode: 500}, err
+			}
+		case models.Link:
+			err := linkTemplate.Execute(&tpl, v)
+			if err != nil {
+				return events.APIGatewayProxyResponse{StatusCode: 500}, err
+			}
+		default:
+			return events.APIGatewayProxyResponse{StatusCode: 400}, fmt.Errorf("unsupported data type for HTML fragment generation: %T", data)
+		}
+
+		return events.APIGatewayProxyResponse{
+			StatusCode: 200,
+			Headers:    map[string]string{"Content-Type": "text/html"},
+			Body:       tpl.String(),
+		}, nil
+	}
+
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return events.APIGatewayProxyResponse{StatusCode: 500}, err
+	}
+
+	return events.APIGatewayProxyResponse{
+		StatusCode: 200,
+		Headers:    map[string]string{"Content-Type": "application/json"},
+		Body:       string(dataBytes),
+	}, nil
 }
