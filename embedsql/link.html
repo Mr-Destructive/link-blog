@@ -1,4 +1,8 @@
 <div class="link-item bg-white rounded-lg shadow-md p-4 mb-4" id="link-{{.ID}}">
     <a href="{{.Url}}" target="_blank" class="font-bold text-blue-600 hover:underline">{{.Url}}</a>
     <div class="commentary text-gray-600 italic mt-2 text-sm">{{.Commentary}}</div>
+
+    <div class="mt-2 flex space-x-2">
+        <button hx-put="/.netlify/functions/api?id={{.ID}}" hx-target="#link-{{.ID}}" hx-swap="outerHTML" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs">Edit</button>
+    </div>
 </div>

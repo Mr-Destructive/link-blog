@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 
 	_ "github.com/tursodatabase/libsql-client-go/libsql"
 
@@ -24,6 +25,7 @@ var (
 	queries      *models.Queries
 	listTemplate *template.Template
 	linkTemplate *template.Template
+	editTemplate *template.Template
 )
 
 func main() {
@@ -49,13 +51,14 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 		log.Printf("error creating tables: %v", err)
 		return events.APIGatewayProxyResponse{StatusCode: 500}, err
 	}
+	linkTemplate = template.Must(template.New("link").Parse(embedsql.LinkHTML))
+	listTemplate = template.Must(template.New("list").Parse(embedsql.ListHTML))
+	editTemplate = template.Must(template.New("edit").Parse(embedsql.EditHTML))
 	switch req.HTTPMethod {
 	case http.MethodGet:
 		if req.QueryStringParameters["id"] != "" {
 
 		}
-		linkTemplate = template.Must(template.New("link").Parse(embedsql.LinkHTML))
-		listTemplate = template.Must(template.New("list").Parse(embedsql.ListHTML))
 
 		var links []models.Link
 		links, err = queries.ListLinks(ctx)
@@ -83,7 +86,55 @@ func handler(req events.APIGatewayProxyRequest) (events.APIGatewayProxyResponse,
 		}
 		createdLink, err := queries.GetLink(ctx, createdLinkId)
 		return respond(req, createdLink)
-	//case http.MethodPut:
+	case http.MethodPut:
+		linkIdStr := req.QueryStringParameters["id"]
+		formData, err := url.ParseQuery(req.Body)
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid request body"}, nil
+		}
+		if len(formData) == 0 && linkIdStr != "" {
+			linkId, err := strconv.Atoi(linkIdStr)
+			linkObj, err := queries.GetLink(ctx, int64(linkId))
+			var tpl bytes.Buffer
+			err = editTemplate.Execute(&tpl, linkObj)
+			if err != nil {
+				return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
+			}
+			return events.APIGatewayProxyResponse{
+				StatusCode: 200,
+				Headers:    map[string]string{"Content-Type": "text/html"},
+				Body:       tpl.String(),
+			}, nil
+		}
+		linkId, err := strconv.Atoi(linkIdStr)
+		linkObj, err := queries.GetLink(ctx, int64(linkId))
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid link ID"}, nil
+		}
+		var link models.UpdateLinkParams
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid request body"}, nil
+		}
+		Url := formData.Get("url")
+		content := formData.Get("commentary")
+		if content == "" || Url == "" {
+			return events.APIGatewayProxyResponse{StatusCode: 400, Body: "Invalid request body"}, nil
+		}
+		if Url != "" && Url != linkObj.Url {
+			link.Url = Url
+		}
+		link.ID = linkObj.ID
+		link.Url = Url
+		link.Commentary = content
+		err = queries.UpdateLink(ctx, link)
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
+		}
+		linkObj, err = queries.GetLink(ctx, int64(linkId))
+		if err != nil {
+			return events.APIGatewayProxyResponse{StatusCode: 500, Body: err.Error()}, nil
+		}
+		return respond(req, linkObj)
 	//case http.MethodDelete:
 	default:
 		return events.APIGatewayProxyResponse{StatusCode: 200}, err

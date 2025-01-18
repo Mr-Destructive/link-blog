@@ -1,0 +1,13 @@
+<form hx-put="/.netlify/functions/api/?id={{.ID}}" hx-target="#link-{{.ID}}" hx-swap="outerHTML" hx-encoding="urlencoded" class="bg-white rounded-lg shadow-md p-4 mb-4" id="link-{{.ID}}">
+    <input type="hidden" name="id" value="{{.ID}}">
+    <label for="url" class="block text-gray-700 font-bold mb-2">URL:</label>
+    <input type="url" id="url" name="url" value="{{.Url}}" required class="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring focus:ring-blue-300 mb-2"><br>
+
+    <label for="commentary" class="block text-gray-700 font-bold mb-2">Commentary:</label>
+    <textarea id="commentary" name="commentary" class="w-full border border-gray-300 rounded-md px-3 py-2 h-24 focus:outline-none focus:ring focus:ring-blue-300">{{.Commentary}}</textarea><br><br>
+
+    <div class="flex justify-between">
+        <button type="submit" class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:ring focus:ring-green-300">Save</button>
+        <button hx-get="/.netlify/functions/api" hx-target="#link-list" hx-swap="innerHTML" class="bg-gray-300 hover:bg-gray-400 text-gray-700 font-bold py-2 px-4 rounded focus:outline-none focus:ring focus:ring-gray-300" type="button">Cancel</button>
+    </div>
+</form>
