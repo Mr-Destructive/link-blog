@@ -3,7 +3,7 @@
     <div class="font-bold text-blue-600 hover:underline">{{.Url}}</div>
     <div class="commentary text-gray-600 italic mt-2 text-sm">{{.Commentary}}</div>
         <div class="mt-2 flex space-x-2">
-            <button  class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs">Edit</button>
+            <button hx-put="/.netlify/functions/api?id={{.ID}}" hx-target="#link-{{.ID}}" hx-swap="outerHTML" class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs">Edit</button>
             <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-2 rounded text-xs">Delete</button>
     </div>
 </div>
